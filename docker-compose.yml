@@ -1,0 +1,39 @@
+version: "3.5"
+services:
+  localstack:
+    image: localstack/localstack-full
+    container_name: localstack
+    network_mode: bridge
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+      - "4572:4572"
+      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
+    environment:
+      - SERVICES=s3
+      - DEBUG=${DEBUG-1 }
+      - DATA_DIR=${DATA_DIR-/tmp/localstack/data}
+      - PORT_WEB_UI=${PORT_WEB_UI-8080}
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+    volumes:
+      - "./localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  db:
+    image: mariadb
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    ports:
+      - 3306:3306
+    volumes:
+      - "./maria/:/etc/mysql/conf.d"
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - 9001:8080
