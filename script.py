@@ -104,9 +104,9 @@ if __name__ =="__main__":
                 writer.writeheader()
                 writer.writerow({"Uniqe Countries":len(result)})
             
-    # downloadFile()
+    downloadFile()
 
     # withPandas()
     withOutPandas()
 
-    # pushToS3()
+    pushToS3()
