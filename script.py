@@ -29,6 +29,8 @@ if __name__ =="__main__":
     def pushToS3()-> None:
         print("Uploading to s3...")
         s3 = boto3.client("s3",endpoint_url="http://localhost:4566")
+        if(not s3.head_bucket(Bucket="demo")):
+            s3.create_bucket(Bucket='demo')
         try:
             s3.upload_file("result.csv","demo","result.csv")
             print("Finished uploading to s3...")
@@ -53,7 +55,7 @@ if __name__ =="__main__":
                 data = pd.read_csv(f)
                 db = connect("result.db")
 
-                data.to_sql("data",db)
+                data.to_sql("data",db,if_exists="replace")
 
                 result = pd.DataFrame({"Uniqe Countries":[len(set(data["location"]))]})
 
@@ -104,9 +106,9 @@ if __name__ =="__main__":
                 writer.writeheader()
                 writer.writerow({"Uniqe Countries":len(result)})
             
-    # downloadFile()
+    downloadFile()
 
-    # withPandas()
-    withOutPandas()
+    withPandas()
+    # withOutPandas()
 
-    # pushToS3()
+    pushToS3()
