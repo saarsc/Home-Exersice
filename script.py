@@ -17,7 +17,7 @@ RESULT_FILE = "result.csv"
     :return row - filled up row
 """
 def fixEmpty(row: dict)-> dict:
-    row = {k: v or None for k, v in row.items()}
+    row = [x or None for x in row.values()]
     return row
 
 
@@ -82,20 +82,22 @@ if __name__ =="__main__":
             sys.exit(1)
 
         cur = conn.cursor()
-
+        cur.execute("SET GLOBAL sql_mode = ''")
         cur.execute("CREATE DATABASE IF NOT EXISTS data")
         cur.execute("USE data")
         cur.execute("CREATE TABLE IF NOT EXISTS data (iso_code TEXT,continent TEXT,location TEXT,date DATE,total_cases FLOAT,new_cases FLOAT,new_cases_smoothed FLOAT,total_deaths FLOAT,new_deaths FLOAT,new_deaths_smoothed FLOAT,total_cases_per_million FLOAT,new_cases_per_million FLOAT,new_cases_smoothed_per_million FLOAT,total_deaths_per_million FLOAT,new_deaths_per_million FLOAT,new_deaths_smoothed_per_million FLOAT,reproduction_rate FLOAT,icu_patients FLOAT,icu_patients_per_million FLOAT,hosp_patients FLOAT,hosp_patients_per_million FLOAT,weekly_icu_admissions FLOAT,weekly_icu_admissions_per_million FLOAT,weekly_hosp_admissions FLOAT,weekly_hosp_admissions_per_million FLOAT,new_tests FLOAT,total_tests FLOAT,total_tests_per_thousand FLOAT,new_tests_per_thousand FLOAT,new_tests_smoothed FLOAT,new_tests_smoothed_per_thousand FLOAT,positive_rate FLOAT,tests_per_case FLOAT,tests_units TEXT,total_vaccinations FLOAT,people_vaccinated FLOAT,people_fully_vaccinated FLOAT,total_boosters FLOAT,new_vaccinations FLOAT,new_vaccinations_smoothed FLOAT,total_vaccinations_per_hundred FLOAT,people_vaccinated_per_hundred FLOAT,people_fully_vaccinated_per_hundred FLOAT,total_boosters_per_hundred FLOAT,new_vaccinations_smoothed_per_million FLOAT,stringency_index FLOAT,population FLOAT,population_density FLOAT,median_age FLOAT,aged_65_older FLOAT,aged_70_older FLOAT,gdp_per_capita FLOAT,extreme_poverty FLOAT,cardiovasc_death_rate FLOAT,diabetes_prevalence FLOAT,female_smokers FLOAT,male_smokers FLOAT,handwashing_facilities FLOAT,hospital_beds_per_thousand FLOAT,life_expectancy FLOAT,human_development_index FLOAT,excess_mortality_cumulative_absolute FLOAT,excess_mortality_cumulative FLOAT,excess_mortality FLOAT,excess_mortality_cumulative_per_million FLOAT)")
         cur.execute("TRUNCATE data")
 
         with open(DATA_FILE) as f:
-            data = csv.DictReader(f)
-            qMarks = "%s".join(len(data.fieldnames) * ",")[1:] + "%s"
+            data = list(csv.reader(f))
             print("Inserting data to DB...")
-            with Pool(2) as p:
-                rows = p.map(fixEmpty,data)
-                for row in rows:
-                    cur.execute(f"INSERT INTO data VALUES({qMarks})",list(row.values()))
+
+            qMarks = "%s".join(len(data[0]) * ",")[1:] + "%s"
+            
+            SLICE_SIZE = len(data) // 100
+            for i in range(1,len(data),len(data) //SLICE_SIZE):
+                cur.executemany(f"INSERT INTO data VALUES({qMarks})",data[i:i + len(data)//SLICE_SIZE])
+
             print("Finished inserting data...")
             conn.commit()
 
@@ -106,9 +108,9 @@ if __name__ =="__main__":
                 writer.writeheader()
                 writer.writerow({"Uniqe Countries":len(result)})
             
-    downloadFile()
+    # downloadFile()
 
-    withPandas()
-    # withOutPandas()
+    # withPandas()
+    withOutPandas()
 
     pushToS3()
